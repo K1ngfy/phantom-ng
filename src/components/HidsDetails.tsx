@@ -1,19 +1,35 @@
 import React from 'react';
 import { Artifact } from '../types';
 import { CopyButton } from './CopyButton';
+import { getActiveFieldMappings, mapArtifactToStandardFields } from '../config/fieldMappings';
 
 interface HidsDetailsProps {
   artifact: Artifact;
 }
 
 export const HidsDetails: React.FC<HidsDetailsProps> = ({ artifact }) => {
-  const isAccountLockout = artifact.cef['event.code'] === 4740;
+  const fieldMappings = getActiveFieldMappings('hids');
+  const standardFields = mapArtifactToStandardFields(artifact.cef, fieldMappings);
+  
+  const eventCode = standardFields.eventCode as number || artifact.cef['event.code'];
+  const isAccountLockout = eventCode === 4740;
   const severityBadge = {
     low: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
     medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
     high: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
     critical: 'bg-red-500/20 text-red-400 border-red-500/50',
   };
+
+  const hostName = standardFields.hostName as string || artifact.cef['host.name'];
+  const callerComputer = standardFields.callerComputer as string || artifact.cef['event.caller_computer_name'] || 'GYA-ADFS02';
+  const userName = standardFields.userName as string || artifact.cef['user.name'];
+  const targetUserName = standardFields.targetUserName as string || artifact.cef['user.target.name'] || userName;
+  const userId = standardFields.userId as string || artifact.cef['user.id'];
+  const sourceAccount = standardFields.sourceAccount as string || hostName;
+  const accountStatus = standardFields.accountStatus as string || (isAccountLockout ? 'Locked' : 'Active');
+  const eventCategory = standardFields.eventCategory as string || artifact.cef['event.category'];
+  const timestamp = standardFields.timestamp as string || artifact.cef['_start_time'];
+  const ruleId = standardFields.ruleId as string || artifact.cef['_rule_id'];
 
   return (
     <div className="space-y-6">
@@ -22,14 +38,14 @@ export const HidsDetails: React.FC<HidsDetailsProps> = ({ artifact }) => {
         <div className="bg-gray-800/70 border border-gray-700 rounded-xl p-5">
           <div className="text-sm text-gray-500 mb-2">Event ID</div>
           <div className="flex items-center gap-2">
-            <span className="text-white font-mono text-lg">{artifact.cef['event.id'] || artifact.id}</span>
+            <span className="text-white font-mono text-lg">{String(standardFields.eventId || artifact.id)}</span>
           </div>
         </div>
         <div className="bg-gray-800/70 border border-gray-700 rounded-xl p-5">
           <div className="text-sm text-gray-500 mb-2">Host</div>
           <div className="flex items-center gap-2">
-            <span className="text-cyan-400 font-mono text-base">{artifact.cef['host.name']}</span>
-            {artifact.cef['host.name'] && <CopyButton text={artifact.cef['host.name']} />}
+            <span className="text-cyan-400 font-mono text-base">{hostName}</span>
+            {hostName && <CopyButton text={hostName} />}
           </div>
         </div>
         <div className="bg-gray-800/70 border border-gray-700 rounded-xl p-5">
@@ -54,7 +70,7 @@ export const HidsDetails: React.FC<HidsDetailsProps> = ({ artifact }) => {
               </div>
               <div>
                 <div className="text-sm text-gray-500">Caller Computer</div>
-                <div className="text-white font-bold text-lg">{artifact.cef['event.caller_computer_name'] || 'GYA-ADFS02'}</div>
+                <div className="text-white font-bold text-lg">{callerComputer}</div>
               </div>
             </div>
           </div>
@@ -82,12 +98,12 @@ export const HidsDetails: React.FC<HidsDetailsProps> = ({ artifact }) => {
               </div>
               <div>
                 <div className="text-sm text-gray-500">Target User</div>
-                <div className="text-white font-bold text-lg">{artifact.cef['user.target.name'] || artifact.cef['user.name']}</div>
+                <div className="text-white font-bold text-lg">{targetUserName}</div>
               </div>
             </div>
-            {artifact.cef['user.id'] && (
+            {userId && (
               <div className="text-sm text-gray-500 font-mono">
-                {artifact.cef['user.id']}
+                {userId}
               </div>
             )}
           </div>
@@ -108,7 +124,7 @@ export const HidsDetails: React.FC<HidsDetailsProps> = ({ artifact }) => {
               </div>
               <div>
                 <div className="text-sm text-gray-500">Source Account</div>
-                <div className="text-white font-bold text-lg">{artifact.cef['host.name']}</div>
+                <div className="text-white font-bold text-lg">{sourceAccount}</div>
               </div>
             </div>
           </div>
@@ -128,29 +144,29 @@ export const HidsDetails: React.FC<HidsDetailsProps> = ({ artifact }) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
               <span className="text-sm text-gray-500">Event Code</span>
-              <span className="text-purple-400 font-bold text-xl">{artifact.cef['event.code']}</span>
+              <span className="text-purple-400 font-bold text-xl">{eventCode}</span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
               <span className="text-sm text-gray-500">Category</span>
-              <span className="text-cyan-400 font-semibold text-base">{artifact.cef['event.category']}</span>
+              <span className="text-cyan-400 font-semibold text-base">{eventCategory}</span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
               <span className="text-sm text-gray-500">User</span>
-              <span className="text-blue-400 font-mono text-base">{artifact.cef['user.name']}</span>
+              <span className="text-blue-400 font-mono text-base">{userName}</span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
               <span className="text-sm text-gray-500">Account Status</span>
               <span className={`px-3 py-1.5 rounded text-sm font-semibold ${isAccountLockout ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                {isAccountLockout ? 'Locked' : 'Active'}
+                {accountStatus}
               </span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
               <span className="text-sm text-gray-500">Caller Computer</span>
-              <span className="text-yellow-400 font-mono text-base">{artifact.cef['event.caller_computer_name']}</span>
+              <span className="text-yellow-400 font-mono text-base">{callerComputer}</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-gray-500">Source Account</span>
-              <span className="text-red-400 font-mono text-base">{artifact.cef['host.name']}</span>
+              <span className="text-red-400 font-mono text-base">{sourceAccount}</span>
             </div>
           </div>
         </div>
@@ -238,17 +254,17 @@ export const HidsDetails: React.FC<HidsDetailsProps> = ({ artifact }) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
               <span className="text-sm text-gray-500">User ID</span>
-              <span className="text-gray-300 font-mono text-base">{artifact.cef['user.id']}</span>
+              <span className="text-gray-300 font-mono text-base">{userId}</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-gray-500">Ingest Time</span>
-              <span className="text-gray-300 text-base">{artifact.cef['_start_time']?.split('T')[1]?.split('.')[0] || '01:40:06'}</span>
+              <span className="text-gray-300 text-base">{timestamp?.split('T')[1]?.split('.')[0] || '01:40:06'}</span>
             </div>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between py-3 border-b border-gray-700/50">
               <span className="text-sm text-gray-500">Rule ID</span>
-              <span className="text-gray-300 font-mono text-sm">{artifact.cef['_rule_id'] || 'ads45f17-7c9c-42ed-af58-cf8c9ecbf6a9'}</span>
+              <span className="text-gray-300 font-mono text-sm">{ruleId || 'ads45f17-7c9c-42ed-af58-cf8c9ecbf6a9'}</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-gray-500">Event UUID</span>

@@ -243,35 +243,94 @@ const cleanupFallbackContainer = () => {
 };
 
 const restoreOriginalDetails = () => {
-  const artifactDetailsContainer = document.querySelector('.artifact-details');
-  if (artifactDetailsContainer) {
-    artifactDetailsContainer.innerHTML = `
-      <div class="artifact-detail_row">
-        <tbody>
-          <tr><td><b>Name</b></td><td>[TVM] Windows Account Lockouts From Endpoint</td></tr>
-          <tr><td><b>Label</b></td><td>hids_events</td></tr>
-          <tr><td><b>Description</b></td><td>Detects the occurrence of Active Directory Security Event ID 4740...</td></tr>
-          <tr><td><b>Source ID</b></td><td>276325adde8b9958479a58a6d647a8</td></tr>
-          <tr><td><b>Start Time</b></td><td>2026-06-02T01:15:47</td></tr>
-          <tr><td><b>Created</b></td><td>Today at 1:40 am</td></tr>
-          <tr><td><b>Type</b></td><td>N/A</td></tr>
-          <tr><td><b>Severity</b></td><td>Medium</td></tr>
-          <tr><td><b>Tags</b></td><td>Hids</td></tr>
-        </tbody>
-      </div>
-      <div class="cf-details-header">Details</div>
-      <table class="cf-details-table">
-        <tbody>
-          <tr class="cf-detail_row"><td class="cf-detail_name">_start_time</td><td class="cf-detail_value">2026-06-02T01:15:47</td></tr>
-          <tr class="cf-detail_row"><td class="cf-detail_name">_event_type</td><td class="cf-detail_value">hids_events</td></tr>
-          <tr class="cf-detail_row"><td class="cf-detail_name">event_code</td><td class="cf-detail_value">4740</td></tr>
-          <tr class="cf-detail_row"><td class="cf-detail_name">event_category</td><td class="cf-detail_value">User Account Management</td></tr>
-          <tr class="cf-detail_row"><td class="cf-detail_name">host_name</td><td class="cf-detail_value">GYA-DC04.gg.cicc.net</td></tr>
-        </tbody>
-      </table>
-    `;
+  const artifactDetailsContainer = document.querySelector('[class*="artifact-detail"]') as HTMLElement;
+  if (!artifactDetailsContainer) {
+    console.log('[phantom-ng] CLEANUP: No artifact details container found to restore');
+    return;
   }
-  console.log('[phantom-ng] CLEANUP: Original details restored');
+
+  artifactDetailsContainer.innerHTML = '';
+  
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+      <button id="phantom-ng-restore-btn" style="
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+        transition: all 0.2s ease;
+      ">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+        </svg>
+        Open Enhanced View
+      </button>
+    </div>
+  `;
+  
+  artifactDetailsContainer.appendChild(wrapper);
+  
+  const originalContent = document.createElement('div');
+  originalContent.id = 'phantom-ng-original-content';
+  originalContent.innerHTML = `
+    <div class="artifact-detail_row">
+      <tbody>
+        <tr><td><b>Name</b></td><td>[TVM] Windows Account Lockouts From Endpoint</td></tr>
+        <tr><td><b>Label</b></td><td>hids_events</td></tr>
+        <tr><td><b>Description</b></td><td>Detects the occurrence of Active Directory Security Event ID 4740...</td></tr>
+        <tr><td><b>Source ID</b></td><td>276325adde8b9958479a58a6d647a8</td></tr>
+        <tr><td><b>Start Time</b></td><td>2026-06-02T01:15:47</td></tr>
+        <tr><td><b>Created</b></td><td>Today at 1:40 am</td></tr>
+        <tr><td><b>Type</b></td><td>N/A</td></tr>
+        <tr><td><b>Severity</b></td><td>Medium</td></tr>
+        <tr><td><b>Tags</b></td><td>Hids</td></tr>
+      </tbody>
+    </div>
+    <div class="cf-details-header">Details</div>
+    <table class="cf-details-table">
+      <tbody>
+        <tr class="cf-detail_row"><td class="cf-detail_name">_start_time</td><td class="cf-detail_value">2026-06-02T01:15:47</td></tr>
+        <tr class="cf-detail_row"><td class="cf-detail_name">_event_type</td><td class="cf-detail_value">hids_events</td></tr>
+        <tr class="cf-detail_row"><td class="cf-detail_name">event_code</td><td class="cf-detail_value">4740</td></tr>
+        <tr class="cf-detail_row"><td class="cf-detail_name">event_category</td><td class="cf-detail_value">User Account Management</td></tr>
+        <tr class="cf-detail_row"><td class="cf-detail_name">host_name</td><td class="cf-detail_value">GYA-DC04.gg.cicc.net</td></tr>
+      </tbody>
+    </table>
+  `;
+  
+  artifactDetailsContainer.appendChild(originalContent);
+  
+  const restoreBtn = document.getElementById('phantom-ng-restore-btn');
+  if (restoreBtn) {
+    restoreBtn.addEventListener('click', () => {
+      console.log('[phantom-ng] EVENT: Restore button clicked');
+      const artifacts = useArtifactStore.getState().artifacts;
+      if (artifacts.length > 0) {
+        replaceArtifactDetails(artifacts[0]);
+      }
+    });
+    
+    restoreBtn.addEventListener('mouseenter', () => {
+      restoreBtn.style.transform = 'translateY(-1px)';
+      restoreBtn.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.4)';
+    });
+    
+    restoreBtn.addEventListener('mouseleave', () => {
+      restoreBtn.style.transform = 'translateY(0)';
+      restoreBtn.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.3)';
+    });
+  }
+  
+  console.log('[phantom-ng] CLEANUP: Original details restored with phantom-ng button');
 };
 
 const extractContainerId = (): string | null => {
@@ -368,43 +427,86 @@ const extractArtifactId = (element: HTMLElement): number | null => {
 };
 
 const setupEventListeners = () => {
-  document.addEventListener('click', (event) => {
+  const debounceMap = new Map<number, NodeJS.Timeout>();
+  
+  document.addEventListener('click', async (event) => {
     const target = event.target as HTMLElement;
     console.log('[phantom-ng] EVENT: Click detected on:', target.tagName, target.className);
     
-    const artifactRow = target.closest('[role="row"], tr.artifact-row, [class*="artifact-row"], .rt-tr-group');
+    const artifactRow = target.closest('[role="row"], tr.artifact-row, [class*="artifact-row"], .rt-tr-group, .rt-tr');
     console.log('[phantom-ng] EVENT: Artifact row found:', !!artifactRow);
     
     if (artifactRow) {
       console.log('[phantom-ng] EVENT: Row HTML snippet:', artifactRow.outerHTML.substring(0, 500));
       
-      const artifacts = useArtifactStore.getState().artifacts;
+      let artifacts = useArtifactStore.getState().artifacts;
       console.log('[phantom-ng] EVENT: Artifacts in store:', artifacts.length);
       
       if (artifacts.length === 0) {
         console.log('[phantom-ng] EVENT: No artifacts in store, fetching...');
-        fetchArtifacts();
-        return;
+        await fetchArtifacts();
+        artifacts = useArtifactStore.getState().artifacts;
       }
 
       const artifactId = extractArtifactId(artifactRow as HTMLElement);
       console.log('[phantom-ng] EVENT: Extracted Artifact ID:', artifactId);
       
       if (artifactId) {
-        const artifact = artifacts.find((a: Artifact) => a.id === artifactId);
-        console.log('[phantom-ng] EVENT: Artifact found:', !!artifact);
+        const debounceId = debounceMap.get(artifactId);
+        if (debounceId) clearTimeout(debounceId);
         
-        if (artifact) {
-          console.log('[phantom-ng] EVENT: Replacing artifact details for:', artifactId);
-          replaceArtifactDetails(artifact);
-        } else {
-          console.log('[phantom-ng] EVENT: Artifact not found in store with ID:', artifactId);
-        }
+        const timeout = setTimeout(() => {
+          const artifact = artifacts.find((a: Artifact) => a.id === artifactId);
+          console.log('[phantom-ng] EVENT: Artifact found:', !!artifact);
+          
+          if (artifact) {
+            console.log('[phantom-ng] EVENT: Replacing artifact details for:', artifactId);
+            replaceArtifactDetails(artifact);
+          } else {
+            console.log('[phantom-ng] EVENT: Artifact not found in store with ID:', artifactId);
+          }
+        }, 100);
+        
+        debounceMap.set(artifactId, timeout);
       } else {
         console.log('[phantom-ng] EVENT: Could not extract Artifact ID');
+        extractArtifactIdFallback(artifactRow as HTMLElement);
       }
     }
   }, true);
+};
+
+const extractArtifactIdFallback = (element: HTMLElement): number | null => {
+  console.log('[phantom-ng] EXTRACT: Trying fallback ID extraction...');
+  
+  const idAttrs = ['data-id', 'data-artifact-id', 'data-row-key', 'row-id', 'id'];
+  
+  for (const attr of idAttrs) {
+    const value = element.getAttribute(attr);
+    if (value) {
+      const numMatch = value.match(/(\d+)/);
+      if (numMatch) {
+        console.log('[phantom-ng] EXTRACT: Found ID via attribute', attr, ':', numMatch[1]);
+        return parseInt(numMatch[1], 10);
+      }
+    }
+  }
+  
+  const textContent = element.textContent || '';
+  const idMatch = textContent.match(/\b(\d{5,})\b/);
+  if (idMatch) {
+    console.log('[phantom-ng] EXTRACT: Found ID via text content:', idMatch[1]);
+    return parseInt(idMatch[1], 10);
+  }
+  
+  const artifacts = useArtifactStore.getState().artifacts;
+  if (artifacts.length === 1) {
+    console.log('[phantom-ng] EXTRACT: Only one artifact in store, using it');
+    return artifacts[0].id;
+  }
+  
+  console.log('[phantom-ng] EXTRACT: Fallback extraction failed');
+  return null;
 };
 
 const safeInit = () => {

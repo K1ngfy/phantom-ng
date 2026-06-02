@@ -1,12 +1,16 @@
 import React, { useMemo } from 'react';
 import { Artifact } from '../types';
 import { CopyButton } from './CopyButton';
+import { getActiveFieldMappings, mapArtifactToStandardFields } from '../config/fieldMappings';
 
 interface NidsDetailsProps {
   artifact: Artifact;
 }
 
 export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
+  const fieldMappings = getActiveFieldMappings('nids');
+  const standardFields = mapArtifactToStandardFields(artifact.cef, fieldMappings);
+  
   const originalEvent = useMemo(() => {
     try {
       return artifact.cef['event.original'] ? JSON.parse(artifact.cef['event.original']) : null;
@@ -25,6 +29,16 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
     return colors[artifact.severity as keyof typeof colors] || colors.medium;
   }, [artifact.severity]);
 
+  const sourceAddress = standardFields.sourceAddress as string || artifact.cef['source.ip'];
+  const sourcePort = standardFields.sourcePort || artifact.cef['source.port'];
+  const destinationAddress = standardFields.destinationAddress as string || artifact.cef['destination.ip'];
+  const destinationPort = standardFields.destinationPort || artifact.cef['destination.port'];
+  const protocol = standardFields.protocol as string || artifact.cef['network.protocol'] || 'HTTP';
+  const transportProtocol = standardFields.transportProtocol as string || artifact.cef['network.transport'] || 'TCP';
+  const httpMethod = standardFields.httpMethod as string || artifact.cef['http.request.method'] || 'GET';
+  const httpUrl = standardFields.httpUrl as string || artifact.cef['http.url'] || artifact.cef['http.domain'];
+  const timestamp = standardFields.timestamp as string || artifact.cef['@timestamp'];
+
   return (
     <div className="space-y-6">
       {/* Header Info */}
@@ -33,16 +47,16 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
           <div className="text-sm text-gray-500 mb-2">Protocol</div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-cyan-500/20 text-cyan-400 text-sm font-semibold rounded">
-              {artifact.cef['network.protocol'] || 'HTTP'}
+              {protocol}
             </span>
             <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-sm font-semibold rounded">
-              {artifact.cef['network.transport'] || 'TCP'}
+              {transportProtocol}
             </span>
           </div>
         </div>
         <div className="bg-gray-800/70 border border-gray-700 rounded-xl p-5">
           <div className="text-sm text-gray-500 mb-2">Event ID</div>
-          <span className="text-white font-mono text-lg">{artifact.cef['event.id']}</span>
+          <span className="text-white font-mono text-lg">{String(standardFields.eventId || artifact.id)}</span>
         </div>
         <div className="bg-gray-800/70 border border-gray-700 rounded-xl p-5">
           <div className="text-sm text-gray-500 mb-2">Severity</div>
@@ -66,13 +80,13 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
               </div>
               <div>
                 <div className="text-sm text-gray-500">Source</div>
-                <div className="text-white font-bold text-lg">{artifact.cef['source.ip']}</div>
+                <div className="text-white font-bold text-lg">{sourceAddress}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="bg-gray-800/50 rounded-lg p-3">
                 <span className="text-gray-500">Port:</span>
-                <span className="text-blue-400 ml-2 font-mono text-base">{artifact.cef['source.port']}</span>
+                <span className="text-blue-400 ml-2 font-mono text-base">{sourcePort != null ? String(sourcePort) : ''}</span>
               </div>
               {artifact.cef['source.nat.ip'] && (
                 <div className="bg-gray-800/50 rounded-lg p-3">
@@ -86,7 +100,7 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
           {/* Arrow & Method */}
           <div className="flex flex-col items-center">
             <div className="bg-gray-700 rounded-full px-5 py-2 mb-3">
-              <span className="text-green-400 font-bold text-lg">{artifact.cef['http.request.method'] || 'GET'}</span>
+              <span className="text-green-400 font-bold text-lg">{httpMethod}</span>
             </div>
             <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -106,17 +120,17 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
               </div>
               <div>
                 <div className="text-sm text-gray-500">Destination</div>
-                <div className="text-white font-bold text-lg">{artifact.cef['destination.ip']}</div>
+                <div className="text-white font-bold text-lg">{destinationAddress}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="bg-gray-800/50 rounded-lg p-3">
                 <span className="text-gray-500">Port:</span>
-                <span className="text-red-400 ml-2 font-mono text-base">{artifact.cef['destination.port']}</span>
+                <span className="text-red-400 ml-2 font-mono text-base">{destinationPort != null ? String(destinationPort) : ''}</span>
               </div>
               <div className="bg-gray-800/50 rounded-lg p-3">
                 <span className="text-gray-500">Service:</span>
-                <span className="text-cyan-400 ml-2 text-base">HTTP</span>
+                <span className="text-cyan-400 ml-2 text-base">{protocol}</span>
               </div>
             </div>
           </div>
@@ -127,9 +141,9 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
           <div className="text-sm text-gray-500 mb-2">Request URL</div>
           <div className="flex items-center gap-3">
             <span className="text-green-400 font-mono text-base flex-1 truncate">
-              {artifact.cef['http.url'] || artifact.cef['http.domain']}
+              {httpUrl}
             </span>
-            {artifact.cef['http.url'] && <CopyButton text={artifact.cef['http.url']} />}
+            {httpUrl && <CopyButton text={httpUrl} />}
           </div>
         </div>
       </div>
@@ -203,12 +217,12 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-blue-500"></div>
               <span className="text-sm text-gray-500">Source IP</span>
-              <span className="text-gray-300 font-mono text-base ml-auto">{artifact.cef['source.ip']}</span>
+              <span className="text-gray-300 font-mono text-base ml-auto">{sourceAddress}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-blue-500"></div>
               <span className="text-sm text-gray-500">Source Port</span>
-              <span className="text-gray-300 font-mono text-base ml-auto">{artifact.cef['source.port']}</span>
+              <span className="text-gray-300 font-mono text-base ml-auto">{sourcePort != null ? String(sourcePort) : ''}</span>
             </div>
             {artifact.cef['source.nat.ip'] && (
               <div className="flex items-center gap-3">
@@ -222,17 +236,17 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-red-500"></div>
               <span className="text-sm text-gray-500">Destination IP</span>
-              <span className="text-gray-300 font-mono text-base ml-auto">{artifact.cef['destination.ip']}</span>
+              <span className="text-gray-300 font-mono text-base ml-auto">{destinationAddress}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-red-500"></div>
               <span className="text-sm text-gray-500">Destination Port</span>
-              <span className="text-gray-300 font-mono text-base ml-auto">{artifact.cef['destination.port']}</span>
+              <span className="text-gray-300 font-mono text-base ml-auto">{destinationPort != null ? String(destinationPort) : ''}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
               <span className="text-sm text-gray-500">Service</span>
-              <span className="text-gray-300 text-base ml-auto">HTTP</span>
+              <span className="text-gray-300 text-base ml-auto">{protocol}</span>
             </div>
           </div>
         </div>
@@ -250,7 +264,7 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
               <div className="ml-6">
                 <div className="flex items-center gap-3">
                   <span className="text-gray-300 text-base">HTTP Request</span>
-                  <span className="text-sm text-gray-500">{artifact.cef['@timestamp']?.split('T')[1]?.split('.')[0] || '20:33:08'}</span>
+                  <span className="text-sm text-gray-500">{timestamp?.split('T')[1]?.split('.')[0] || '20:33:08'}</span>
                 </div>
               </div>
             </div>
