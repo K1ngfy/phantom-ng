@@ -5,13 +5,33 @@ import { Artifact, ArtifactResponse } from '../types';
 import styles from '../styles/index.css?inline';
 
 let reactRoot: Root | null = null;
+let originalArtifactDetailsHTML: string | null = null;
 
 const init = () => {
-  console.log('%c[phantom-ng] INIT: Content script loaded', 'color: #8b5cf6; font-weight: bold');
+  console.log('%c[phantom-ng] ================= INITIALIZATION START =================', 'color: #8b5cf6; font-weight: bold; font-size: 14px');
+  console.log('[phantom-ng] INIT: Content script loaded at:', new Date().toISOString());
   console.log('[phantom-ng] INIT: Current URL:', window.location.href);
   console.log('[phantom-ng] INIT: Document ready state:', document.readyState);
   console.log('[phantom-ng] INIT: Document body exists:', !!document.body);
   console.log('[phantom-ng] INIT: Number of script tags:', document.querySelectorAll('script').length);
+  console.log('[phantom-ng] INIT: Number of artifacts containers found:', document.querySelectorAll('[class*="artifact"]').length);
+
+  if (document.readyState === 'loading') {
+    console.log('[phantom-ng] INIT: Waiting for DOMContentLoaded...');
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('[phantom-ng] INIT: DOMContentLoaded fired');
+      completeInit();
+    });
+  } else {
+    completeInit();
+  }
+};
+
+const completeInit = () => {
+  console.log('[phantom-ng] INIT: Completing initialization...');
+  
+  setupMutationObserver();
+  console.log('[phantom-ng] INIT: Mutation observer setup complete');
 
   setupEventListeners();
   console.log('[phantom-ng] INIT: Event listeners setup complete');
@@ -21,6 +41,33 @@ const init = () => {
 
   createTestButton();
   console.log('[phantom-ng] INIT: Test button created');
+  
+  console.log('%c[phantom-ng] ================= INITIALIZATION COMPLETE =================', 'color: #10b981; font-weight: bold; font-size: 14px');
+};
+
+const setupMutationObserver = () => {
+  const observer = new MutationObserver((mutations) => {
+    console.log('[phantom-ng] MUTATION: DOM changed, checking for artifacts table...');
+    
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement) {
+          if (node.querySelector?.('[role="row"], tr.artifact-row, .rt-tr-group, [class*="artifact"]')) {
+            console.log('[phantom-ng] MUTATION: Artifact table detected in DOM');
+          }
+        }
+      });
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false
+  });
+  
+  console.log('[phantom-ng] INIT: Mutation observer configured');
 };
 
 const createTestButton = () => {
@@ -105,6 +152,12 @@ const replaceArtifactDetails = (artifact: Artifact) => {
     console.log('[phantom-ng] RENDER: No artifact details container found, creating fallback');
     createFallbackContainer();
     return;
+  }
+
+  console.log('[phantom-ng] RENDER: Saving original artifact details HTML');
+  if (!originalArtifactDetailsHTML) {
+    originalArtifactDetailsHTML = artifactDetailsContainer.innerHTML;
+    console.log('[phantom-ng] RENDER: Original HTML saved (length:', originalArtifactDetailsHTML.length, ')');
   }
 
   if (reactRoot) {
@@ -243,71 +296,105 @@ const cleanupFallbackContainer = () => {
 };
 
 const restoreOriginalDetails = () => {
+  console.log('[phantom-ng] CLEANUP: Starting restoreOriginalDetails');
   const artifactDetailsContainer = document.querySelector('[class*="artifact-detail"]') as HTMLElement;
   if (!artifactDetailsContainer) {
     console.log('[phantom-ng] CLEANUP: No artifact details container found to restore');
     return;
   }
 
-  artifactDetailsContainer.innerHTML = '';
+  console.log('[phantom-ng] CLEANUP: Original HTML available:', !!originalArtifactDetailsHTML);
   
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = `
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-      <button id="phantom-ng-restore-btn" style="
-        padding: 8px 16px;
-        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-        transition: all 0.2s ease;
-      ">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-        </svg>
-        Open Enhanced View
-      </button>
-    </div>
-  `;
-  
-  artifactDetailsContainer.appendChild(wrapper);
-  
-  const originalContent = document.createElement('div');
-  originalContent.id = 'phantom-ng-original-content';
-  originalContent.innerHTML = `
-    <div class="artifact-detail_row">
-      <tbody>
-        <tr><td><b>Name</b></td><td>[TVM] Windows Account Lockouts From Endpoint</td></tr>
-        <tr><td><b>Label</b></td><td>hids_events</td></tr>
-        <tr><td><b>Description</b></td><td>Detects the occurrence of Active Directory Security Event ID 4740...</td></tr>
-        <tr><td><b>Source ID</b></td><td>276325adde8b9958479a58a6d647a8</td></tr>
-        <tr><td><b>Start Time</b></td><td>2026-06-02T01:15:47</td></tr>
-        <tr><td><b>Created</b></td><td>Today at 1:40 am</td></tr>
-        <tr><td><b>Type</b></td><td>N/A</td></tr>
-        <tr><td><b>Severity</b></td><td>Medium</td></tr>
-        <tr><td><b>Tags</b></td><td>Hids</td></tr>
-      </tbody>
-    </div>
-    <div class="cf-details-header">Details</div>
-    <table class="cf-details-table">
-      <tbody>
-        <tr class="cf-detail_row"><td class="cf-detail_name">_start_time</td><td class="cf-detail_value">2026-06-02T01:15:47</td></tr>
-        <tr class="cf-detail_row"><td class="cf-detail_name">_event_type</td><td class="cf-detail_value">hids_events</td></tr>
-        <tr class="cf-detail_row"><td class="cf-detail_name">event_code</td><td class="cf-detail_value">4740</td></tr>
-        <tr class="cf-detail_row"><td class="cf-detail_name">event_category</td><td class="cf-detail_value">User Account Management</td></tr>
-        <tr class="cf-detail_row"><td class="cf-detail_name">host_name</td><td class="cf-detail_value">GYA-DC04.gg.cicc.net</td></tr>
-      </tbody>
-    </table>
-  `;
-  
-  artifactDetailsContainer.appendChild(originalContent);
+  // Restore original HTML if available
+  if (originalArtifactDetailsHTML) {
+    console.log('[phantom-ng] CLEANUP: Restoring original HTML (length:', originalArtifactDetailsHTML.length, ')');
+    artifactDetailsContainer.innerHTML = `
+      <div id="phantom-ng-enhanced-btn-wrapper" style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+        <button id="phantom-ng-restore-btn" style="
+          padding: 10px 20px;
+          background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+          transition: all 0.2s ease;
+        ">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+          </svg>
+          Open Enhanced View
+        </button>
+      </div>
+    ` + originalArtifactDetailsHTML;
+  } else {
+    // Fallback to default content if original was not saved
+    console.log('[phantom-ng] CLEANUP: No original HTML saved, using fallback content');
+    artifactDetailsContainer.innerHTML = '';
+    
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+        <button id="phantom-ng-restore-btn" style="
+          padding: 10px 20px;
+          background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+          transition: all 0.2s ease;
+        ">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+          </svg>
+          Open Enhanced View
+        </button>
+      </div>
+    `;
+    
+    artifactDetailsContainer.appendChild(wrapper);
+    
+    const originalContent = document.createElement('div');
+    originalContent.id = 'phantom-ng-original-content';
+    originalContent.innerHTML = `
+      <div class="artifact-detail_row">
+        <tbody>
+          <tr><td><b>Name</b></td><td>[TVM] Windows Account Lockouts From Endpoint</td></tr>
+          <tr><td><b>Label</b></td><td>hids_events</td></tr>
+          <tr><td><b>Description</b></td><td>Detects the occurrence of Active Directory Security Event ID 4740...</td></tr>
+          <tr><td><b>Source ID</b></td><td>276325adde8b9958479a58a6d647a8</td></tr>
+          <tr><td><b>Start Time</b></td><td>2026-06-02T01:15:47</td></tr>
+          <tr><td><b>Created</b></td><td>Today at 1:40 am</td></tr>
+          <tr><td><b>Type</b></td><td>N/A</td></tr>
+          <tr><td><b>Severity</b></td><td>Medium</td></tr>
+          <tr><td><b>Tags</b></td><td>Hids</td></tr>
+        </tbody>
+      </div>
+      <div class="cf-details-header">Details</div>
+      <table class="cf-details-table">
+        <tbody>
+          <tr class="cf-detail_row"><td class="cf-detail_name">_start_time</td><td class="cf-detail_value">2026-06-02T01:15:47</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">_event_type</td><td class="cf-detail_value">hids_events</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">event_code</td><td class="cf-detail_value">4740</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">event_category</td><td class="cf-detail_value">User Account Management</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">host_name</td><td class="cf-detail_value">GYA-DC04.gg.cicc.net</td></tr>
+        </tbody>
+      </table>
+    `;
+    
+    artifactDetailsContainer.appendChild(originalContent);
+  }
   
   const restoreBtn = document.getElementById('phantom-ng-restore-btn');
   if (restoreBtn) {
@@ -431,12 +518,37 @@ const setupEventListeners = () => {
   
   document.addEventListener('click', async (event) => {
     const target = event.target as HTMLElement;
-    console.log('[phantom-ng] EVENT: Click detected on:', target.tagName, target.className);
+    console.log('%c[phantom-ng] EVENT: ================= CLICK DETECTED =================', 'color: #f59e0b; font-weight: bold');
+    console.log('[phantom-ng] EVENT: Click target:', target.tagName, target.className, target.id);
+    console.log('[phantom-ng] EVENT: Click target outerHTML (first 300 chars):', target.outerHTML?.substring(0, 300));
     
-    const artifactRow = target.closest('[role="row"], tr.artifact-row, [class*="artifact-row"], .rt-tr-group, .rt-tr');
+    const rowSelectors = [
+      '[role="row"]',
+      'tr.artifact-row',
+      '[class*="artifact-row"]',
+      '.rt-tr-group',
+      '.rt-tr',
+      'tr[data-row-key]',
+      '[data-artifact-id]',
+      '.artifact-row',
+      '.list-row'
+    ];
+    
+    let artifactRow: HTMLElement | null = null;
+    for (const selector of rowSelectors) {
+      artifactRow = target.closest(selector) as HTMLElement;
+      if (artifactRow) {
+        console.log('[phantom-ng] EVENT: Found artifact row using selector:', selector);
+        break;
+      }
+    }
+    
     console.log('[phantom-ng] EVENT: Artifact row found:', !!artifactRow);
     
     if (artifactRow) {
+      console.log('[phantom-ng] EVENT: Row classList:', artifactRow.classList);
+      console.log('[phantom-ng] EVENT: Row dataset:', artifactRow.dataset);
+      console.log('[phantom-ng] EVENT: Row id:', artifactRow.id);
       console.log('[phantom-ng] EVENT: Row HTML snippet:', artifactRow.outerHTML.substring(0, 500));
       
       let artifacts = useArtifactStore.getState().artifacts;

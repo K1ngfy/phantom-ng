@@ -31,7 +31,7 @@ export const hidsFieldMappings: ArtifactTypeConfig = {
     },
     {
       standardField: 'hostName',
-      cefPaths: ['host.name', 'host_name', 'cef.host_name', 'src_host', 'source_host'],
+      cefPaths: ['host.name', 'dest', 'host_name', 'cef.host_name', 'src_host', 'source_host'],
       description: '主机名'
     },
     {
@@ -101,8 +101,78 @@ export const hidsFieldMappings: ArtifactTypeConfig = {
     },
     {
       standardField: 'commandLine',
-      cefPaths: ['process.command_line', 'command_line', 'cmd_line', 'cef.command_line'],
+      cefPaths: ['process.command_line', 'command_line', 'cmdline', 'cmd_line', 'cef.command_line'],
       description: '命令行'
+    },
+    {
+      standardField: 'processPath',
+      cefPaths: ['process.executable', 'process.path', 'process_path', 'executable_path', 'cef.process_executable', 'proc_path'],
+      description: '进程路径'
+    },
+    {
+      standardField: 'parentProcessName',
+      cefPaths: ['process.parent.name', 'parent_process_name', 'pproc_name', 'cef.parent_process_name'],
+      description: '父进程名称'
+    },
+    {
+      standardField: 'parentProcessId',
+      cefPaths: ['process.parent.id', 'parent_process_id', 'ppid', 'cef.parent_process_id'],
+      description: '父进程ID'
+    },
+    {
+      standardField: 'parentProcessPath',
+      cefPaths: ['process.parent.executable', 'process.parent.path', 'parent_process_path', 'cef.parent_process_path'],
+      description: '父进程路径'
+    },
+    {
+      standardField: 'currentDirectory',
+      cefPaths: ['process_current_directory', 'process.working_directory', 'current_directory', 'cwd', 'working_dir', 'cef.working_directory'],
+      description: '当前执行目录'
+    },
+    {
+      standardField: 'sessionId',
+      cefPaths: ['process.session_id', 'session_id', 'sessionid', 'cef.session_id'],
+      description: '会话ID'
+    },
+    {
+      standardField: 'systemOs',
+      cefPaths: ['os', 'host.os.name', 'os.name', 'system_os', 'operating_system', 'cef.os_name'],
+      description: '操作系统'
+    },
+    {
+      standardField: 'systemOsVersion',
+      cefPaths: ['host.os.version', 'os.version', 'os_version', 'cef.os_version'],
+      description: '操作系统版本'
+    },
+    {
+      standardField: 'groupId',
+      cefPaths: ['process.group.id', 'process_group_id', 'group_id', 'gid', 'cef.group_id'],
+      description: '组ID'
+    },
+    {
+      standardField: 'groupName',
+      cefPaths: ['process.group.name', 'group_name', 'cef.group_name'],
+      description: '组名称'
+    },
+    {
+      standardField: 'userGroup',
+      cefPaths: ['user.group', 'user_group', 'cef.user_group'],
+      description: '用户组'
+    },
+    {
+      standardField: 'processIntegrityLevel',
+      cefPaths: ['process.integrity_level', 'integrity_level', 'cef.integrity_level'],
+      description: '进程完整性级别'
+    },
+    {
+      standardField: 'processStart',
+      cefPaths: ['process.start', 'process_start_time', 'process_start', 'cef.process_start'],
+      description: '进程启动时间'
+    },
+    {
+      standardField: 'threadId',
+      cefPaths: ['process.thread.id', 'thread_id', 'tid', 'cef.thread_id'],
+      description: '线程ID'
     }
   ]
 };
