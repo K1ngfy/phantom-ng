@@ -79,10 +79,31 @@ const testReplaceView = async () => {
 };
 
 const replaceArtifactDetails = (artifact: Artifact) => {
+  console.log('[phantom-ng] RENDER: Looking for artifact details container...');
+  
   const artifactDetailsContainer = document.querySelector('.artifact-details');
   console.log('[phantom-ng] RENDER: Artifact details container found:', !!artifactDetailsContainer);
   
   if (!artifactDetailsContainer) {
+    console.log('[phantom-ng] RENDER: Trying alternative selectors...');
+    
+    const alternativeSelectors = [
+      '.element-detail',
+      '[class*="artifact-detail"]',
+      '#artifact-detail',
+      '.phantom-artifact-details',
+      '.detail-panel',
+      '.panel-content'
+    ];
+    
+    for (const selector of alternativeSelectors) {
+      const el = document.querySelector(selector);
+      console.log(`[phantom-ng] RENDER: Selector "${selector}" found:`, !!el);
+      if (el) {
+        console.log(`[phantom-ng] RENDER: Element HTML snippet:`, el.outerHTML.substring(0, 500));
+      }
+    }
+    
     console.log('[phantom-ng] RENDER: No artifact details container found, creating fallback');
     createFallbackContainer();
     return;
