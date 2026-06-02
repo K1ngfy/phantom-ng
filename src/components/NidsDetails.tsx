@@ -38,6 +38,36 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
   const httpMethod = standardFields.httpMethod as string || artifact.cef['http.request.method'] || 'GET';
   const httpUrl = standardFields.httpUrl as string || artifact.cef['http.url'] || artifact.cef['http.domain'];
   const timestamp = standardFields.timestamp as string || artifact.cef['@timestamp'];
+  
+  // 进程信息字段
+  const processName = standardFields.processName as string || artifact.cef['process.name'];
+  const processId = standardFields.processId as string || artifact.cef['process.id'];
+  const commandLine = standardFields.commandLine as string || artifact.cef['process.command_line'];
+  const processPath = standardFields.processPath as string || artifact.cef['process.executable'];
+  const parentProcessName = standardFields.parentProcessName as string || artifact.cef['process.parent.name'];
+  const parentProcessId = standardFields.parentProcessId as string || artifact.cef['process.parent.id'];
+  
+  // TLS相关字段
+  const tlsVersion = standardFields.tlsVersion as string || artifact.cef['tls.version'];
+  const tlsCipher = standardFields.tlsCipher as string || artifact.cef['tls.cipher'];
+  const tlsServerName = standardFields.tlsServerName as string || artifact.cef['tls.server_name'];
+  const tlsIssuer = standardFields.tlsIssuer as string || artifact.cef['tls.certificate.issuer'];
+  const tlsSubject = standardFields.tlsSubject as string || artifact.cef['tls.certificate.subject'];
+  const tlsFingerprint = standardFields.tlsFingerprint as string || artifact.cef['tls.certificate.fingerprint'];
+  const tlsNotBefore = standardFields.tlsNotBefore as string || artifact.cef['tls.certificate.not_before'];
+  const tlsNotAfter = standardFields.tlsNotAfter as string || artifact.cef['tls.certificate.not_after'];
+  
+  // 用户信息字段（osquery抓取）
+  const userName = standardFields.userName as string || artifact.cef['user.name'];
+  const userId = standardFields.userId as string || artifact.cef['user.id'];
+  const userGroup = standardFields.userGroup as string || artifact.cef['user.group'];
+  const groupId = standardFields.groupId as string || artifact.cef['user.group.id'];
+  const groupName = standardFields.groupName as string || artifact.cef['user.group.name'];
+  const effectiveUserId = standardFields.effectiveUserId as string || artifact.cef['process.euid'];
+  const effectiveGroupId = standardFields.effectiveGroupId as string || artifact.cef['process.egid'];
+  const sessionId = standardFields.sessionId as string || artifact.cef['process.session_id'];
+  const loginShell = standardFields.loginShell as string || artifact.cef['user.shell'];
+  const homeDirectory = standardFields.homeDirectory as string || artifact.cef['user.home'];
 
   return (
     <div className="space-y-6">
@@ -251,6 +281,142 @@ export const NidsDetails: React.FC<NidsDetailsProps> = ({ artifact }) => {
           </div>
         </div>
       </div>
+
+      {/* Process Information */}
+      {(processName || processId || commandLine || processPath || parentProcessName || parentProcessId) && (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
+          <h3 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-5 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Process Information
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Process Name</div>
+              <div className="text-white font-mono text-base truncate">{processName || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Process ID</div>
+              <div className="text-cyan-400 font-mono text-base">{processId || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Parent Process</div>
+              <div className="text-white font-mono text-base truncate">{parentProcessName || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Parent PID</div>
+              <div className="text-cyan-400 font-mono text-base">{parentProcessId || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Process Path</div>
+              <div className="text-white font-mono text-sm truncate">{processPath || 'N/A'}</div>
+            </div>
+          </div>
+          {commandLine && (
+            <div className="mt-4 bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Command Line</div>
+              <div className="text-white font-mono text-sm break-all">{commandLine}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* User Information (from osquery) */}
+      {(userName || userId || userGroup || groupId || groupName || effectiveUserId || effectiveGroupId || sessionId || loginShell || homeDirectory) && (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
+          <h3 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-5 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            User Information (osquery)
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Username</div>
+              <div className="text-white font-mono text-base">{userName || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">User ID (UID)</div>
+              <div className="text-cyan-400 font-mono text-base">{userId || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Session ID</div>
+              <div className="text-yellow-400 font-mono text-base">{sessionId || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Group Name</div>
+              <div className="text-white font-mono text-base">{groupName || userGroup || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Group ID (GID)</div>
+              <div className="text-cyan-400 font-mono text-base">{groupId || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Effective UID</div>
+              <div className="text-green-400 font-mono text-base">{effectiveUserId || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Effective GID</div>
+              <div className="text-green-400 font-mono text-base">{effectiveGroupId || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Login Shell</div>
+              <div className="text-white font-mono text-sm truncate">{loginShell || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Home Directory</div>
+              <div className="text-white font-mono text-sm truncate">{homeDirectory || 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TLS Information */}
+      {(tlsVersion || tlsCipher || tlsServerName || tlsIssuer || tlsSubject || tlsFingerprint || tlsNotBefore || tlsNotAfter) && (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
+          <h3 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-5 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            TLS Certificate
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">TLS Version</div>
+              <div className="text-green-400 font-mono text-base">{tlsVersion || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Cipher Suite</div>
+              <div className="text-blue-400 font-mono text-base">{tlsCipher || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Server Name</div>
+              <div className="text-white font-mono text-base truncate">{tlsServerName || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Certificate Fingerprint</div>
+              <div className="text-yellow-400 font-mono text-sm truncate">{tlsFingerprint || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Issuer</div>
+              <div className="text-white font-mono text-sm truncate">{tlsIssuer || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Subject</div>
+              <div className="text-white font-mono text-sm truncate">{tlsSubject || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Valid From</div>
+              <div className="text-gray-300 font-mono text-sm">{tlsNotBefore || 'N/A'}</div>
+            </div>
+            <div className="bg-gray-900/50 rounded-xl p-4">
+              <div className="text-sm text-gray-500 mb-2">Valid Until</div>
+              <div className="text-gray-300 font-mono text-sm">{tlsNotAfter || 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Timeline */}
       <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">

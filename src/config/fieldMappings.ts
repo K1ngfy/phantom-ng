@@ -31,7 +31,7 @@ export const hidsFieldMappings: ArtifactTypeConfig = {
     },
     {
       standardField: 'hostName',
-      cefPaths: ['host.name', 'dest', 'host_name', 'cef.host_name', 'src_host', 'source_host'],
+      cefPaths: ['hostIdentifier', 'host.name', 'dest', 'host_name', 'cef.host_name', 'src_host', 'source_host'],
       description: '主机名'
     },
     {
@@ -183,32 +183,32 @@ export const nidsFieldMappings: ArtifactTypeConfig = {
   fields: [
     {
       standardField: 'sourceAddress',
-      cefPaths: ['source.address', 'src_ip', 'source_ip', 'cef.source_address'],
+      cefPaths: ['source.address', 'src_ip', 'source_ip', 'id.orig_h', 'cef.source_address'],
       description: '源IP地址'
     },
     {
       standardField: 'sourcePort',
-      cefPaths: ['source.port', 'src_port', 'source_port', 'cef.source_port'],
+      cefPaths: ['source.port', 'src_port', 'source_port', 'id.orig_p', 'cef.source_port'],
       description: '源端口'
     },
     {
       standardField: 'destinationAddress',
-      cefPaths: ['destination.address', 'dest_ip', 'destination_ip', 'cef.destination_address'],
+      cefPaths: ['destination.address', 'dest_ip', 'destination_ip', 'id.resp_h', 'cef.destination_address'],
       description: '目的IP地址'
     },
     {
       standardField: 'destinationPort',
-      cefPaths: ['destination.port', 'dest_port', 'destination_port', 'cef.destination_port'],
+      cefPaths: ['destination.port', 'dest_port', 'destination_port', 'id.resp_p', 'cef.destination_port'],
       description: '目的端口'
     },
     {
       standardField: 'protocol',
-      cefPaths: ['network.protocol', 'protocol', 'cef.network_protocol'],
+      cefPaths: ['l7', 'network.protocol', 'protocol', 'cef.network_protocol'],
       description: '协议'
     },
     {
       standardField: 'transportProtocol',
-      cefPaths: ['network.transport', 'transport_protocol', 'cef.transport_protocol'],
+      cefPaths: ['proto', 'network.transport', 'transport_protocol', 'cef.transport_protocol'],
       description: '传输协议'
     },
     {
@@ -258,7 +258,7 @@ export const nidsFieldMappings: ArtifactTypeConfig = {
     },
     {
       standardField: 'alertSignature',
-      cefPaths: ['alert.signature', 'signature', 'alert_signature', 'cef.alert_signature'],
+      cefPaths: ['alert.signature', 'rule_name', 'signature', 'alert_signature', 'cef.alert_signature'],
       description: '告警签名'
     },
     {
@@ -290,6 +290,134 @@ export const nidsFieldMappings: ArtifactTypeConfig = {
       standardField: 'packets',
       cefPaths: ['network.packets', 'packets', 'packet_count', 'cef.packets'],
       description: '数据包数量'
+    },
+    // 进程信息字段
+    {
+      standardField: 'processName',
+      cefPaths: ['process.name', 'process_name', 'proc_name', 'cef.process_name'],
+      description: '进程名称'
+    },
+    {
+      standardField: 'processId',
+      cefPaths: ['process.id', 'process_id', 'pid', 'cef.process_id'],
+      description: '进程ID'
+    },
+    {
+      standardField: 'commandLine',
+      cefPaths: ['process.command_line', 'command_line', 'cmdline', 'cef.command_line'],
+      description: '命令行'
+    },
+    {
+      standardField: 'processPath',
+      cefPaths: ['path', 'process.executable', 'process.path', 'process_path', 'cef.process_executable'],
+      description: '进程路径'
+    },
+    {
+      standardField: 'parentProcessName',
+      cefPaths: ['process.parent.name', 'parent_process_name', 'cef.parent_process_name'],
+      description: '父进程名称'
+    },
+    {
+      standardField: 'parentProcessId',
+      cefPaths: ['process.parent.id', 'parent_process_id', 'ppid', 'cef.parent_process_id'],
+      description: '父进程ID'
+    },
+    // 用户信息字段（osquery抓取）
+    {
+      standardField: 'userName',
+      cefPaths: ['uname', 'user.name', 'username', 'user_name', 'process.user.name', 'cef.user_name'],
+      description: '用户名'
+    },
+    {
+      standardField: 'userId',
+      cefPaths: ['user.id', 'uid', 'user_id', 'process.user.id', 'cef.user_id'],
+      description: '用户ID'
+    },
+    {
+      standardField: 'userGroup',
+      cefPaths: ['user.group', 'user_group', 'group_name', 'cef.user_group'],
+      description: '用户组'
+    },
+    {
+      standardField: 'groupId',
+      cefPaths: ['user.group.id', 'gid', 'group_id', 'cef.group_id'],
+      description: '组ID'
+    },
+    {
+      standardField: 'groupName',
+      cefPaths: ['user.group.name', 'group_name', 'cef.group_name'],
+      description: '组名称'
+    },
+    {
+      standardField: 'effectiveUserId',
+      cefPaths: ['process.euid', 'effective_uid', 'euid', 'cef.effective_uid'],
+      description: '有效用户ID'
+    },
+    {
+      standardField: 'effectiveGroupId',
+      cefPaths: ['process.egid', 'effective_gid', 'egid', 'cef.effective_gid'],
+      description: '有效组ID'
+    },
+    {
+      standardField: 'sessionId',
+      cefPaths: ['process.session_id', 'session_id', 'sessionid', 'cef.session_id'],
+      description: '会话ID'
+    },
+    {
+      standardField: 'loginShell',
+      cefPaths: ['user.shell', 'login_shell', 'shell', 'cef.login_shell'],
+      description: '登录Shell'
+    },
+    {
+      standardField: 'homeDirectory',
+      cefPaths: ['user.home', 'home_directory', 'home_dir', 'cef.home_directory'],
+      description: '主目录'
+    },
+    // TLS相关字段
+    {
+      standardField: 'tlsVersion',
+      cefPaths: ['tls.version', 'tls_version', 'ssl_version', 'cef.tls_version'],
+      description: 'TLS版本'
+    },
+    {
+      standardField: 'tlsCipher',
+      cefPaths: ['tls.cipher', 'tls_cipher', 'ssl_cipher', 'cef.tls_cipher'],
+      description: 'TLS加密套件'
+    },
+    {
+      standardField: 'tlsServerName',
+      cefPaths: ['tls.hostname', 'tls.server_name', 'server_name', 'sni', 'cef.tls_server_name'],
+      description: 'TLS服务器名称'
+    },
+    {
+      standardField: 'tlsIssuer',
+      cefPaths: ['tls.certificate.issuer', 'tls_issuer', 'cert_issuer', 'cef.tls_issuer'],
+      description: 'TLS证书颁发者'
+    },
+    {
+      standardField: 'tlsSubject',
+      cefPaths: ['tls.subjectDN','tls.certificate.subject', 'tls_subject', 'cert_subject', 'cef.tls_subject'],
+      description: 'TLS证书主题'
+    },
+    {
+      standardField: 'tlsFingerprint',
+      cefPaths: ['tls.certificate.fingerprint', 'tls_fingerprint', 'cert_fingerprint', 'sha256', 'cef.tls_fingerprint'],
+      description: 'TLS证书指纹'
+    },
+    {
+      standardField: 'tlsNotBefore',
+      cefPaths: ['tls.certificate.not_before', 'tls_not_before', 'cert_not_before', 'cef.tls_not_before'],
+      description: 'TLS证书有效期开始'
+    },
+    {
+      standardField: 'tlsNotAfter',
+      cefPaths: ['tls.certificate.not_after', 'tls_not_after', 'cert_not_after', 'cef.tls_not_after'],
+      description: 'TLS证书有效期结束'
+    },
+    {
+      standardField: 'tlsSerialNumber',
+      cefPaths: ['tls.certificate.serial_number', 'tls_serial_number', 'cert_serial', 'cef.tls_serial_number'],
+      description: 'TLS证书序列号'
     }
   ]
 };
