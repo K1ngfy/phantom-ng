@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { ArtifactDetailsDrawer } from '../components/ArtifactDetailsDrawer';
 import { useArtifactStore } from '../store';
-import { ArtifactResponse } from '../types';
+import { Artifact, ArtifactResponse } from '../types';
 import styles from '../styles/index.css?inline';
 
 const init = () => {
@@ -29,11 +29,19 @@ const init = () => {
   console.log('[phantom-ng] INIT: Shadow DOM created:', !!shadow);
 
   const style = document.createElement('style');
-  style.textContent = styles;
+  style.textContent = `
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    ${styles}
+  `;
   shadow.appendChild(style);
-  console.log('[phantom-ng] INIT: Styles injected to Shadow DOM, length:', styles.length);
+  console.log('[phantom-ng] INIT: Styles injected to Shadow DOM, length:', style.textContent.length);
 
   const appContainer = document.createElement('div');
+  appContainer.id = 'phantom-ng-app';
   shadow.appendChild(appContainer);
   console.log('[phantom-ng] INIT: App container created in shadow DOM');
 
@@ -194,7 +202,7 @@ const fetchArtifacts = async () => {
     console.log(`[phantom-ng] Loaded ${data.data.length} artifacts`);
     
     if (data.data.length > 0) {
-      console.log('[phantom-ng] Sample artifact IDs:', data.data.slice(0, 5).map(a => a.id));
+      console.log('[phantom-ng] Sample artifact IDs:', data.data.slice(0, 5).map((a: Artifact) => a.id));
     }
   } catch (error) {
     console.error('[phantom-ng] Failed to fetch artifacts:', error);
@@ -268,7 +276,7 @@ const setupEventListeners = () => {
       console.log('[phantom-ng] EVENT: Extracted Artifact ID:', artifactId);
       
       if (artifactId) {
-        const artifact = artifacts.find(a => a.id === artifactId);
+        const artifact = artifacts.find((a: Artifact) => a.id === artifactId);
         console.log('[phantom-ng] EVENT: Artifact found:', !!artifact);
         
         if (artifact) {
