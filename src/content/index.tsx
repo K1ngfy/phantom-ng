@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { ArtifactDetailsDrawer } from '../components/ArtifactDetailsDrawer';
+import { ArtifactInlineDetails } from '../components/ArtifactInlineDetails';
 import { useArtifactStore } from '../store';
 import { Artifact, ArtifactResponse } from '../types';
 import styles from '../styles/index.css?inline';
@@ -10,59 +10,6 @@ const init = () => {
   console.log('[phantom-ng] INIT: Document ready state:', document.readyState);
   console.log('[phantom-ng] INIT: Document body exists:', !!document.body);
   console.log('[phantom-ng] INIT: Number of script tags:', document.querySelectorAll('script').length);
-
-  const container = document.createElement('div');
-  container.id = 'phantom-ng-container';
-  container.style.cssText = `
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-    z-index: 99999;
-  `;
-  document.body.appendChild(container);
-  console.log('[phantom-ng] INIT: Container created and appended to body:', document.getElementById('phantom-ng-container'));
-
-  const shadow = container.attachShadow({ mode: 'open' });
-  console.log('[phantom-ng] INIT: Shadow DOM created:', !!shadow);
-
-  const style = document.createElement('style');
-  style.textContent = `
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    ${styles}
-  `;
-  shadow.appendChild(style);
-  console.log('[phantom-ng] INIT: Styles injected to Shadow DOM, length:', style.textContent.length);
-
-  const appContainer = document.createElement('div');
-  appContainer.id = 'phantom-ng-app';
-  shadow.appendChild(appContainer);
-  console.log('[phantom-ng] INIT: App container created in shadow DOM');
-
-  try {
-    const root = createRoot(appContainer);
-    console.log('[phantom-ng] INIT: React root created successfully');
-
-    const App = () => {
-      console.log('[phantom-ng] INIT: App component rendering triggered');
-      return <ArtifactDetailsDrawer />;
-    };
-
-    root.render(<App />);
-    console.log('[phantom-ng] INIT: React app mounted successfully');
-    
-    setTimeout(() => {
-      console.log('[phantom-ng] INIT: Checking shadow DOM after 1s:', shadow.children.length);
-    }, 1000);
-  } catch (error) {
-    console.error('[phantom-ng] INIT: Failed to mount React app:', error);
-  }
 
   setupEventListeners();
   console.log('[phantom-ng] INIT: Event listeners setup complete');
@@ -81,12 +28,12 @@ const createTestButton = () => {
     position: fixed;
     bottom: 20px;
     left: 20px;
-    padding: 12px 24px;
+    padding: 14px 28px;
     background: linear-gradient(135deg, #8b5cf6, #7c3aed);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 10px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     z-index: 99998;
@@ -96,7 +43,7 @@ const createTestButton = () => {
   button.textContent = 'Test phantom-ng';
   button.addEventListener('click', () => {
     console.log('[phantom-ng] TEST: Test button clicked');
-    testDrawer();
+    testInlineView();
   });
   button.addEventListener('mouseenter', () => {
     button.style.transform = 'translateY(-2px)';
@@ -109,50 +56,143 @@ const createTestButton = () => {
   document.body.appendChild(button);
 };
 
-const testDrawer = () => {
+const testInlineView = () => {
   const artifacts = useArtifactStore.getState().artifacts;
   console.log('[phantom-ng] TEST: Artifacts in store:', artifacts.length);
   
   if (artifacts.length > 0) {
     const testArtifact = artifacts[0];
-    console.log('[phantom-ng] TEST: Opening drawer with artifact:', testArtifact.id);
-    useArtifactStore.getState().selectArtifact(testArtifact);
-    useArtifactStore.getState().openDrawer();
+    console.log('[phantom-ng] TEST: Creating inline view for artifact:', testArtifact.id);
+    renderInlineDetails(testArtifact);
   } else {
     console.log('[phantom-ng] TEST: No artifacts found, creating mock data');
-    const mockArtifact = {
+    const mockArtifact: Artifact = {
       id: 99999,
-      name: 'Test NIDS Alert',
-      description: 'This is a test artifact for debugging',
+      name: 'Test NIDS Alert - XSS Payload Detected',
+      description: 'Suspicious HTTP request containing potential XSS payload detected from external source',
       severity: 'high',
-      tags: ['Nids', 'network'],
+      tags: ['Nids', 'network', 'security'],
       cef: {
         _event_type: 'nids_events',
-        sourceAddress: '192.168.1.100',
-        destinationAddress: '10.0.0.5',
-        sourcePort: 443,
-        destinationPort: 8080,
-        protocol: 'TCP',
-        eventName: 'Suspicious Traffic Detected',
+        'source.ip': '192.168.1.100',
+        'source.port': 49785,
+        'source.nat.ip': '203.0.113.45',
+        'destination.ip': '10.0.0.5',
+        'destination.port': 8080,
+        'network.protocol': 'HTTP',
+        'network.transport': 'TCP',
+        'http.url': 'http://example.com/api/v1/endpoint?param=<script>alert(1)</script>',
+        'http.request.method': 'GET',
+        'http.response.status_code': 200,
+        'http.version': 'HTTP/1.1',
+        'http.response.user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+        'event.id': 'event-12345',
+        '@timestamp': '2024-01-15T20:33:08.123Z',
       },
-      _pretty_create_time: '2024-01-15 10:30:00',
+      _pretty_create_time: '2024-01-15 20:33:08',
       event: {
         original: JSON.stringify({
           src_ip: '192.168.1.100',
           dst_ip: '10.0.0.5',
-          src_port: 443,
+          src_port: 49785,
           dst_port: 8080,
           protocol: 'TCP',
-          alert_message: 'Potential malicious activity detected',
-          timestamp: '2024-01-15T10:30:00Z',
-          signature: 'ET POLICY Suspicious inbound connection'
+          alert_message: 'Potential XSS payload detected in URL parameter',
+          timestamp: '2024-01-15T20:33:08Z',
+          signature: 'ET POLICY Suspicious URL parameter pattern',
+          process: {
+            name: 'python3.6',
+            pid: 12345,
+            executable: '/usr/local/bin/python3',
+          },
+          user: {
+            name: 'root'
+          }
         }, null, 2)
       }
     };
-    useArtifactStore.getState().selectArtifact(mockArtifact as any);
-    useArtifactStore.getState().openDrawer();
-    console.log('[phantom-ng] TEST: Drawer opened with mock artifact');
+    renderInlineDetails(mockArtifact);
+    console.log('[phantom-ng] TEST: Inline view rendered with mock artifact');
   }
+};
+
+const renderInlineDetails = (artifact: Artifact) => {
+  const existingContainer = document.getElementById('phantom-ng-inline-container');
+  if (existingContainer) {
+    existingContainer.remove();
+  }
+
+  const container = document.createElement('div');
+  container.id = 'phantom-ng-inline-container';
+  container.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 1200px;
+    max-height: 85vh;
+    overflow-y: auto;
+    z-index: 99999;
+    background: transparent;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  `;
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'phantom-ng-backdrop';
+  backdrop.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 99998;
+  `;
+  backdrop.addEventListener('click', () => {
+    cleanupInlineView();
+  });
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(container);
+
+  const shadow = container.attachShadow({ mode: 'open' });
+
+  const style = document.createElement('style');
+  style.textContent = `
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    ${styles}
+  `;
+  shadow.appendChild(style);
+
+  const appContainer = document.createElement('div');
+  appContainer.id = 'phantom-ng-app';
+  shadow.appendChild(appContainer);
+
+  const root = createRoot(appContainer);
+  
+  const handleClose = () => {
+    cleanupInlineView();
+  };
+
+  root.render(<ArtifactInlineDetails artifact={artifact} onClose={handleClose} />);
+  console.log('[phantom-ng] RENDER: Inline details view rendered successfully');
+};
+
+const cleanupInlineView = () => {
+  const container = document.getElementById('phantom-ng-inline-container');
+  const backdrop = document.getElementById('phantom-ng-backdrop');
+  
+  if (container) container.remove();
+  if (backdrop) backdrop.remove();
+  
+  console.log('[phantom-ng] CLEANUP: Inline view removed');
 };
 
 const extractContainerId = (): string | null => {
@@ -253,16 +293,12 @@ const setupEventListeners = () => {
     const target = event.target as HTMLElement;
     console.log('[phantom-ng] EVENT: Click detected on:', target.tagName, target.className);
     
-    const tableWrapper = target.closest('#phantom-artifacts-table-wrapper, [class*="artifact"], [role="table"]');
-    console.log('[phantom-ng] EVENT: Table wrapper found:', !!tableWrapper);
+    const artifactRow = target.closest('[role="row"], tr.artifact-row, [class*="artifact-row"], .rt-tr-group');
+    console.log('[phantom-ng] EVENT: Artifact row found:', !!artifactRow);
     
-    const rowElement = target.closest('[role="row"], tr, [class*="row"]');
-    console.log('[phantom-ng] EVENT: Row element found:', !!rowElement);
-    if (rowElement) {
-      console.log('[phantom-ng] EVENT: Row HTML snippet:', rowElement.outerHTML.substring(0, 500));
-    }
-    
-    if (tableWrapper || rowElement) {
+    if (artifactRow) {
+      console.log('[phantom-ng] EVENT: Row HTML snippet:', artifactRow.outerHTML.substring(0, 500));
+      
       const artifacts = useArtifactStore.getState().artifacts;
       console.log('[phantom-ng] EVENT: Artifacts in store:', artifacts.length);
       
@@ -272,7 +308,7 @@ const setupEventListeners = () => {
         return;
       }
 
-      const artifactId = extractArtifactId(target);
+      const artifactId = extractArtifactId(artifactRow as HTMLElement);
       console.log('[phantom-ng] EVENT: Extracted Artifact ID:', artifactId);
       
       if (artifactId) {
@@ -280,10 +316,9 @@ const setupEventListeners = () => {
         console.log('[phantom-ng] EVENT: Artifact found:', !!artifact);
         
         if (artifact) {
-          console.log('[phantom-ng] EVENT: Opening drawer for artifact:', artifactId);
+          console.log('[phantom-ng] EVENT: Rendering inline details for artifact:', artifactId);
           event.preventDefault();
-          useArtifactStore.getState().selectArtifact(artifact);
-          useArtifactStore.getState().openDrawer();
+          renderInlineDetails(artifact);
         } else {
           console.log('[phantom-ng] EVENT: Artifact not found in store with ID:', artifactId);
         }
