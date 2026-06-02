@@ -1,6 +1,9 @@
 export interface Artifact {
   tags: string[];
   id: number;
+  event?: {
+    original?: string;
+  };
   cef: {
     '_owner'?: string;
     'host.id'?: string;
