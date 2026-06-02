@@ -286,8 +286,17 @@ const setupEventListeners = () => {
   }, true);
 };
 
+const safeInit = () => {
+  try {
+    init();
+  } catch (error) {
+    console.error('%c[phantom-ng] FATAL: Failed to initialize content script', 'color: #ef4444; font-weight: bold');
+    console.error('[phantom-ng] FATAL Error:', error);
+  }
+};
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', safeInit);
 } else {
-  init();
+  safeInit();
 }
