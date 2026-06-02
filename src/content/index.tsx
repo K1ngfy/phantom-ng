@@ -44,14 +44,28 @@ const init = () => {
 };
 
 const extractContainerId = (): string | null => {
+  console.log('[phantom-ng] API: Extracting container ID from URL:', window.location.href);
+  
   const urlMatch = window.location.href.match(/container\/(\d+)/);
-  if (urlMatch) return urlMatch[1];
+  if (urlMatch) {
+    console.log('[phantom-ng] API: Found container ID from container pattern:', urlMatch[1]);
+    return urlMatch[1];
+  }
+
+  const missionMatch = window.location.href.match(/mission\/(\d+)/);
+  if (missionMatch) {
+    console.log('[phantom-ng] API: Found container ID from mission pattern:', missionMatch[1]);
+    return missionMatch[1];
+  }
 
   const containerElement = document.querySelector('[data-container-id], .container-id, #container-id');
   if (containerElement) {
-    return containerElement.getAttribute('data-container-id') || containerElement.textContent?.trim() || null;
+    const id = containerElement.getAttribute('data-container-id') || containerElement.textContent?.trim() || null;
+    console.log('[phantom-ng] API: Found container ID from DOM element:', id);
+    return id;
   }
 
+  console.log('[phantom-ng] API: No container ID found in URL or DOM');
   return null;
 };
 

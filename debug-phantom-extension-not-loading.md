@@ -8,86 +8,117 @@
 ## 假设（Hypotheses）
 
 ### H1: Content Script 未被注入
-- **观察点**: Chrome 扩展管理页面是否显示 Content Script 已注入
-- **验证方法**: 检查 manifest.json 的 matches 配置和页面 URL 匹配情况
-- **预期日志**: `[INIT] Content script loaded`
+- **状态**: ❌ 已排除
+- **证据**: 用户反馈看到了完整的初始化日志
 
 ### H2: 初始化失败（Shadow DOM 或 React 挂载）
-- **观察点**: Content Script 执行时的错误信息
-- **验证方法**: 检查 Shadow DOM 创建和 React 挂载过程
-- **预期日志**: `[INIT] Shadow DOM created`, `[INIT] React mounted`
+- **状态**: ❌ 已排除
+- **证据**: 日志显示所有初始化步骤都成功完成
 
 ### H3: 事件监听器未正确绑定
-- **观察点**: 点击表格行时是否有事件触发
-- **验证方法**: 检查事件监听器注册和选择器匹配
-- **预期日志**: `[EVENT] Click detected`, `[EVENT] Artifact ID extracted: <id>`
+- **状态**: ⏳ 待验证
+- **验证方法**: 需要用户点击表格行测试
 
 ### H4: 构建产物路径不正确
-- **观察点**: dist 目录中的文件结构
-- **验证方法**: 检查 CRXJS 打包输出
-- **预期日志**: `[INIT] Script path: <path>`
+- **状态**: ❌ 已排除
+- **证据**: 扩展成功加载并执行
 
-### H5: container_id 提取失败
-- **观察点**: 数据加载时的错误
-- **验证方法**: 检查 URL 解析和 container_id 提取逻辑
-- **预期日志**: `[API] Container ID: <id>`, `[API] Fetching artifacts...`
+### H5: container_id 提取失败 ✅ 已确认
+- **状态**: ✅ 已确认并修复
+- **证据**: 日志显示 `[phantom-ng] No container ID found`
+- **根本原因**: URL 模式不匹配
+  - 代码期望: `container/(\d+)`
+  - 实际 URL: `mission/7203/analyst/artifacts/`
+- **修复方案**: 添加 `mission/(\d+)` 模式匹配
 
-## 已添加的插桩日志
+## 修复内容
 
-在 `src/content/index.tsx` 中添加了以下调试日志：
-- `[INIT] Content script loaded` - Content Script 加载
-- `[INIT] Current URL: <url>` - 当前页面 URL
-- `[INIT] Document ready state: <state>` - 文档就绪状态
-- `[INIT] Container created and appended to body` - 容器创建
-- `[INIT] Shadow DOM created` - Shadow DOM 创建
-- `[INIT] Styles injected to Shadow DOM` - 样式注入
-- `[INIT] React root created` - React 根创建
-- `[INIT] App component rendering` - 组件渲染
-- `[INIT] React app mounted` - React 应用挂载
-- `[INIT] Event listeners setup complete` - 事件监听器设置
-- `[INIT] Initial artifact fetch triggered` - 初始数据获取触发
+### 修改文件: `src/content/index.tsx`
+
+```typescript
+const extractContainerId = (): string | null => {
+  console.log('[phantom-ng] API: Extracting container ID from URL:', window.location.href);
+  
+  // 原有模式
+  const urlMatch = window.location.href.match(/container\/(\d+)/);
+  if (urlMatch) {
+    console.log('[phantom-ng] API: Found container ID from container pattern:', urlMatch[1]);
+    return urlMatch[1];
+  }
+
+  // 新增模式：适配 mission/xxx URL
+  const missionMatch = window.location.href.match(/mission\/(\d+)/);
+  if (missionMatch) {
+    console.log('[phantom-ng] API: Found container ID from mission pattern:', missionMatch[1]);
+    return missionMatch[1];
+  }
+
+  const containerElement = document.querySelector('[data-container-id], .container-id, #container-id');
+  if (containerElement) {
+    const id = containerElement.getAttribute('data-container-id') || containerElement.textContent?.trim() || null;
+    console.log('[phantom-ng] API: Found container ID from DOM element:', id);
+    return id;
+  }
+
+  console.log('[phantom-ng] API: No container ID found in URL or DOM');
+  return null;
+};
+```
+
+## 用户反馈的日志
+
+```
+[phantom-ng] INIT: Content script loaded
+[phantom-ng] INIT: Current URL: https://ua-ph.services.silu.net/mission/7203/analyst/artifacts/
+[phantom-ng] INIT: Document ready state: interactive
+[phantom-ng] INIT: Container created and appended to body
+[phantom-ng] INIT: Shadow DOM created
+[phantom-ng] INIT: Styles injected to Shadow DOM
+[phantom-ng] INIT: React root created
+[phantom-ng] INIT: React app mounted
+[phantom-ng] INIT: Event listeners setup complete
+[phantom-ng] No container ID found
+[phantom-ng] INIT: Initial artifact fetch triggered
+[phantom-ng] INIT: App component rendering
+```
 
 ## 操作步骤（Cheatsheet）
 
 ### 1. 重新加载扩展
 ```bash
-# 重新构建
-npm run build
-
 # 在 Chrome 中：
 # 1. 打开 chrome://extensions/
 # 2. 找到 phantom-ng 扩展
-# 3. 点击"重新加载"按钮
+# 3. 点击"重新加载"按钮 🔄
 ```
 
-### 2. 打开 Phantom 页面并检查控制台
+### 2. 刷新 Phantom 页面
 ```bash
-# 1. 打开 Phantom 页面
-# 2. 按 F12 打开开发者工具
-# 3. 切换到 Console 标签
-# 4. 查找以 [phantom-ng] 开头的日志
+# 在 Phantom 页面：
+# 1. 按 F5 或 Cmd+R 刷新页面
+# 2. 打开控制台查看新的日志
 ```
 
-### 3. 检查扩展注入状态
+### 3. 验证修复
 ```bash
-# 在 Chrome 扩展管理页面：
-# 1. 点击 phantom-ng 扩展的"详细信息"
-# 2. 查看"检查视图"中的 Content Script 是否显示为"已注入"
+# 预期看到的新日志：
+[phantom-ng] API: Extracting container ID from URL: https://ua-ph.services.silu.net/mission/7203/analyst/artifacts/
+[phantom-ng] API: Found container ID from mission pattern: 7203
+[phantom-ng] Loaded X artifacts
 ```
 
-### 4. 检查构建产物
+### 4. 测试点击功能
 ```bash
-# 确认 dist 目录结构正确
-ls -la dist/
-ls -la dist/assets/
-
-# 确认 manifest.json 中的路径正确
-cat dist/manifest.json
+# 点击表格中的任意一行
+# 预期：右侧滑出抽屉面板显示 Artifact 详情
 ```
 
 ## 状态
-- [OPEN] 等待用户反馈控制台日志
+- [OPEN] 等待用户验证修复结果
 
 ## 操作历史
 - 2026-06-02: 添加调试日志到 Content Script
 - 2026-06-02: 重新构建项目
+- 2026-06-02: 收到用户反馈，确认插件已加载
+- 2026-06-02: 识别并修复 container_id 提取问题
+- 2026-06-02: 重新构建修复版本
