@@ -6,11 +6,8 @@
   "permissions": [],
   "content_scripts": [
     {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "js": ["src/content/index.tsx"],
+      "matches": ["http://*/*"],
+      "js": ["assets/content.js"],
       "all_frames": false,
       "run_at": "document_end"
     }
