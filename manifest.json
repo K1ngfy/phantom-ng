@@ -7,9 +7,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*phantom*/*",
-        "https://gy-ph*/*",
-        "https://ua-ph*/*"
+        "https://gy-ph.services.silu.net/",
+        "https://ua-ph.services.silu.net"
       ],
       "js": ["src/content/index.tsx"],
       "all_frames": false,
