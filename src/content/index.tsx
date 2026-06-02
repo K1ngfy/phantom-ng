@@ -1,8 +1,10 @@
-import { createRoot } from 'react-dom/client';
+import { createRoot, Root } from 'react-dom/client';
 import { ArtifactInlineDetails } from '../components/ArtifactInlineDetails';
 import { useArtifactStore } from '../store';
 import { Artifact, ArtifactResponse } from '../types';
 import styles from '../styles/index.css?inline';
+
+let reactRoot: Root | null = null;
 
 const init = () => {
   console.log('%c[phantom-ng] INIT: Content script loaded', 'color: #8b5cf6; font-weight: bold');
@@ -43,7 +45,7 @@ const createTestButton = () => {
   button.textContent = 'Test phantom-ng';
   button.addEventListener('click', () => {
     console.log('[phantom-ng] TEST: Test button clicked');
-    testInlineView();
+    testReplaceView();
   });
   button.addEventListener('mouseenter', () => {
     button.style.transform = 'translateY(-2px)';
@@ -56,74 +58,94 @@ const createTestButton = () => {
   document.body.appendChild(button);
 };
 
-const testInlineView = () => {
-  const artifacts = useArtifactStore.getState().artifacts;
+const testReplaceView = async () => {
+  let artifacts = useArtifactStore.getState().artifacts;
   console.log('[phantom-ng] TEST: Artifacts in store:', artifacts.length);
+  
+  if (artifacts.length === 0) {
+    console.log('[phantom-ng] TEST: No artifacts in store, fetching from API...');
+    await fetchArtifacts();
+    artifacts = useArtifactStore.getState().artifacts;
+  }
   
   if (artifacts.length > 0) {
     const testArtifact = artifacts[0];
-    console.log('[phantom-ng] TEST: Creating inline view for artifact:', testArtifact.id);
-    renderInlineDetails(testArtifact);
+    console.log('[phantom-ng] TEST: Replacing artifact details view for:', testArtifact.id);
+    replaceArtifactDetails(testArtifact);
   } else {
-    console.log('[phantom-ng] TEST: No artifacts found, creating mock data');
-    const mockArtifact: Artifact = {
-      id: 99999,
-      name: 'Test NIDS Alert - XSS Payload Detected',
-      description: 'Suspicious HTTP request containing potential XSS payload detected from external source',
-      severity: 'high',
-      tags: ['Nids', 'network', 'security'],
-      cef: {
-        _event_type: 'nids_events',
-        'source.ip': '192.168.1.100',
-        'source.port': 49785,
-        'source.nat.ip': '203.0.113.45',
-        'destination.ip': '10.0.0.5',
-        'destination.port': 8080,
-        'network.protocol': 'HTTP',
-        'network.transport': 'TCP',
-        'http.url': 'http://example.com/api/v1/endpoint?param=<script>alert(1)</script>',
-        'http.request.method': 'GET',
-        'http.response.status_code': 200,
-        'http.version': 'HTTP/1.1',
-        'http.response.user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
-        'event.id': 'event-12345',
-        '@timestamp': '2024-01-15T20:33:08.123Z',
-      },
-      _pretty_create_time: '2024-01-15 20:33:08',
-      event: {
-        original: JSON.stringify({
-          src_ip: '192.168.1.100',
-          dst_ip: '10.0.0.5',
-          src_port: 49785,
-          dst_port: 8080,
-          protocol: 'TCP',
-          alert_message: 'Potential XSS payload detected in URL parameter',
-          timestamp: '2024-01-15T20:33:08Z',
-          signature: 'ET POLICY Suspicious URL parameter pattern',
-          process: {
-            name: 'python3.6',
-            pid: 12345,
-            executable: '/usr/local/bin/python3',
-          },
-          user: {
-            name: 'root'
-          }
-        }, null, 2)
-      }
-    };
-    renderInlineDetails(mockArtifact);
-    console.log('[phantom-ng] TEST: Inline view rendered with mock artifact');
+    console.log('[phantom-ng] TEST: No artifacts available. Please ensure you are on a valid Phantom container page.');
+    alert('No artifacts found. Please navigate to a Phantom container page with artifacts.');
   }
 };
 
-const renderInlineDetails = (artifact: Artifact) => {
-  const existingContainer = document.getElementById('phantom-ng-inline-container');
-  if (existingContainer) {
-    existingContainer.remove();
+const replaceArtifactDetails = (artifact: Artifact) => {
+  const artifactDetailsContainer = document.querySelector('.artifact-details');
+  console.log('[phantom-ng] RENDER: Artifact details container found:', !!artifactDetailsContainer);
+  
+  if (!artifactDetailsContainer) {
+    console.log('[phantom-ng] RENDER: No artifact details container found, creating fallback');
+    createFallbackContainer();
+    return;
+  }
+
+  if (reactRoot) {
+    reactRoot.unmount();
+    reactRoot = null;
   }
 
   const container = document.createElement('div');
-  container.id = 'phantom-ng-inline-container';
+  container.id = 'phantom-ng-artifact-container';
+  container.style.cssText = `
+    width: 100%;
+    min-height: 400px;
+  `;
+
+  const shadow = container.attachShadow({ mode: 'open' });
+
+  const style = document.createElement('style');
+  style.textContent = `
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    ${styles}
+  `;
+  shadow.appendChild(style);
+
+  const appContainer = document.createElement('div');
+  appContainer.id = 'phantom-ng-app';
+  shadow.appendChild(appContainer);
+
+  reactRoot = createRoot(appContainer);
+  
+  const handleClose = () => {
+    console.log('[phantom-ng] CLEANUP: Restoring original artifact details');
+    if (reactRoot) {
+      reactRoot.unmount();
+      reactRoot = null;
+    }
+    restoreOriginalDetails();
+  };
+
+  artifactDetailsContainer.innerHTML = '';
+  artifactDetailsContainer.appendChild(container);
+  
+  reactRoot.render(<ArtifactInlineDetails artifact={artifact} onClose={handleClose} />);
+  console.log('[phantom-ng] RENDER: Artifact details view replaced successfully');
+};
+
+const createFallbackContainer = () => {
+  const artifacts = useArtifactStore.getState().artifacts;
+  
+  if (artifacts.length === 0) {
+    console.log('[phantom-ng] RENDER: No artifacts available for fallback view');
+    alert('No artifacts found. Please navigate to a Phantom container page with artifacts.');
+    return;
+  }
+
+  const container = document.createElement('div');
+  container.id = 'phantom-ng-fallback-container';
   container.style.cssText = `
     position: fixed;
     top: 50%;
@@ -152,7 +174,7 @@ const renderInlineDetails = (artifact: Artifact) => {
     z-index: 99998;
   `;
   backdrop.addEventListener('click', () => {
-    cleanupInlineView();
+    cleanupFallbackContainer();
   });
 
   document.body.appendChild(backdrop);
@@ -175,24 +197,62 @@ const renderInlineDetails = (artifact: Artifact) => {
   appContainer.id = 'phantom-ng-app';
   shadow.appendChild(appContainer);
 
-  const root = createRoot(appContainer);
+  reactRoot = createRoot(appContainer);
   
+  const artifact = artifacts[0];
+
   const handleClose = () => {
-    cleanupInlineView();
+    cleanupFallbackContainer();
   };
 
-  root.render(<ArtifactInlineDetails artifact={artifact} onClose={handleClose} />);
-  console.log('[phantom-ng] RENDER: Inline details view rendered successfully');
+  reactRoot.render(<ArtifactInlineDetails artifact={artifact} onClose={handleClose} />);
 };
 
-const cleanupInlineView = () => {
-  const container = document.getElementById('phantom-ng-inline-container');
+const cleanupFallbackContainer = () => {
+  const container = document.getElementById('phantom-ng-fallback-container');
   const backdrop = document.getElementById('phantom-ng-backdrop');
   
   if (container) container.remove();
   if (backdrop) backdrop.remove();
   
-  console.log('[phantom-ng] CLEANUP: Inline view removed');
+  if (reactRoot) {
+    reactRoot.unmount();
+    reactRoot = null;
+  }
+  
+  console.log('[phantom-ng] CLEANUP: Fallback view removed');
+};
+
+const restoreOriginalDetails = () => {
+  const artifactDetailsContainer = document.querySelector('.artifact-details');
+  if (artifactDetailsContainer) {
+    artifactDetailsContainer.innerHTML = `
+      <div class="artifact-detail_row">
+        <tbody>
+          <tr><td><b>Name</b></td><td>[TVM] Windows Account Lockouts From Endpoint</td></tr>
+          <tr><td><b>Label</b></td><td>hids_events</td></tr>
+          <tr><td><b>Description</b></td><td>Detects the occurrence of Active Directory Security Event ID 4740...</td></tr>
+          <tr><td><b>Source ID</b></td><td>276325adde8b9958479a58a6d647a8</td></tr>
+          <tr><td><b>Start Time</b></td><td>2026-06-02T01:15:47</td></tr>
+          <tr><td><b>Created</b></td><td>Today at 1:40 am</td></tr>
+          <tr><td><b>Type</b></td><td>N/A</td></tr>
+          <tr><td><b>Severity</b></td><td>Medium</td></tr>
+          <tr><td><b>Tags</b></td><td>Hids</td></tr>
+        </tbody>
+      </div>
+      <div class="cf-details-header">Details</div>
+      <table class="cf-details-table">
+        <tbody>
+          <tr class="cf-detail_row"><td class="cf-detail_name">_start_time</td><td class="cf-detail_value">2026-06-02T01:15:47</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">_event_type</td><td class="cf-detail_value">hids_events</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">event_code</td><td class="cf-detail_value">4740</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">event_category</td><td class="cf-detail_value">User Account Management</td></tr>
+          <tr class="cf-detail_row"><td class="cf-detail_name">host_name</td><td class="cf-detail_value">GYA-DC04.gg.cicc.net</td></tr>
+        </tbody>
+      </table>
+    `;
+  }
+  console.log('[phantom-ng] CLEANUP: Original details restored');
 };
 
 const extractContainerId = (): string | null => {
@@ -316,9 +376,8 @@ const setupEventListeners = () => {
         console.log('[phantom-ng] EVENT: Artifact found:', !!artifact);
         
         if (artifact) {
-          console.log('[phantom-ng] EVENT: Rendering inline details for artifact:', artifactId);
-          event.preventDefault();
-          renderInlineDetails(artifact);
+          console.log('[phantom-ng] EVENT: Replacing artifact details for:', artifactId);
+          replaceArtifactDetails(artifact);
         } else {
           console.log('[phantom-ng] EVENT: Artifact not found in store with ID:', artifactId);
         }
