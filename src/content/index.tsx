@@ -7,7 +7,19 @@ import styles from '../styles/index.css?inline';
 let reactRoot: Root | null = null;
 let originalArtifactDetailsHTML: string | null = null;
 
+const ALLOWED_DOMAINS = ['phantom', 'gy-ph', 'ua-ph'];
+
+const isAllowedDomain = (): boolean => {
+  const hostname = window.location.hostname.toLowerCase();
+  return ALLOWED_DOMAINS.some(domain => hostname.includes(domain));
+};
+
 const init = () => {
+  if (!isAllowedDomain()) {
+    console.log('[phantom-ng] Domain not allowed, skipping initialization:', window.location.hostname);
+    return;
+  }
+  
   console.log('%c[phantom-ng] ================= INITIALIZATION START =================', 'color: #8b5cf6; font-weight: bold; font-size: 14px');
   console.log('[phantom-ng] INIT: Content script loaded at:', new Date().toISOString());
   console.log('[phantom-ng] INIT: Current URL:', window.location.href);

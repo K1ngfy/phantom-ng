@@ -6,10 +6,7 @@
   "permissions": [],
   "content_scripts": [
     {
-      "matches": [
-        "https://gy-ph.services.silu.net/",
-        "https://ua-ph.services.silu.net"
-      ],
+      "matches": ["<all_urls>"],
       "js": ["src/content/index.tsx"],
       "all_frames": false,
       "run_at": "document_end"
