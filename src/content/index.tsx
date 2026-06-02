@@ -5,29 +5,42 @@ import { ArtifactResponse } from '../types';
 import styles from '../styles/index.css?inline';
 
 const init = () => {
+  console.log('[phantom-ng] INIT: Content script loaded');
+  console.log('[phantom-ng] INIT: Current URL:', window.location.href);
+  console.log('[phantom-ng] INIT: Document ready state:', document.readyState);
+
   const container = document.createElement('div');
   container.id = 'phantom-ng-container';
   document.body.appendChild(container);
+  console.log('[phantom-ng] INIT: Container created and appended to body');
 
   const shadow = container.attachShadow({ mode: 'open' });
+  console.log('[phantom-ng] INIT: Shadow DOM created');
 
   const style = document.createElement('style');
   style.textContent = styles;
   shadow.appendChild(style);
+  console.log('[phantom-ng] INIT: Styles injected to Shadow DOM');
 
   const appContainer = document.createElement('div');
   shadow.appendChild(appContainer);
 
   const root = createRoot(appContainer);
+  console.log('[phantom-ng] INIT: React root created');
 
   const App = () => {
+    console.log('[phantom-ng] INIT: App component rendering');
     return <ArtifactDetailsDrawer />;
   };
 
   root.render(<App />);
+  console.log('[phantom-ng] INIT: React app mounted');
 
   setupEventListeners();
+  console.log('[phantom-ng] INIT: Event listeners setup complete');
+
   fetchArtifacts();
+  console.log('[phantom-ng] INIT: Initial artifact fetch triggered');
 };
 
 const extractContainerId = (): string | null => {
