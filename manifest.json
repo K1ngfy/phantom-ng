@@ -2,10 +2,13 @@
   "manifest_version": 3,
   "name": "phantom-ng",
   "version": "1.0.0",
+  "description": "Splunk SOAR (Phantom) Artifacts 详情面板优化",
+  "permissions": [],
   "content_scripts": [
     {
-      "matches": ["https://ua-ph.services.silu.net/", "https://gy-ph.services.silu.net/"],
-      "js": ["assets/content.js"]
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["assets/content.js"],
+      "run_at": "document_end"
     }
   ]
 }
